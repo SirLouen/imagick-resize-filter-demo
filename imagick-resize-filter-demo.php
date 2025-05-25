@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Imagick Resize Filter Demo
- * Description: Demonstrates the use of WP_Image_Editor_Imagick->thumbnail_image() with specific filters (FILTER_TRIANGLE and FILTER_LANCZOS).
+ * Description: Demonstrates the use of WP_Image_Editor_Imagick->thumbnail_image() with specific filters (FILTER_TRIANGLE, FILTER_LANCZOS and FILTER_HAMMING).
  * Version: 1.0.0
  * Author: SirLouen <sir.louen@gmail.com>
  */
