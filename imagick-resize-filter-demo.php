@@ -52,13 +52,17 @@ function irfd_admin_page_callback() {
     <?php
 }
 
+function irfd_add_filter_then_resize() {
+    return 'FILTER_HAMMING';
+}
+
 function irfd_handle_resize_submission() {
     $image_id      = isset( $_POST['image_id'] ) ? intval( $_POST['image_id'] ) : 0;
     $target_width  = 500;
     $target_height = 0;
     $image_path    = get_attached_file( $image_id );
-    $editor        = wp_get_image_editor( $image_path, array( 'editor' => 'WP_Image_Editor_Imagick' ) );
 
+    $editor        = wp_get_image_editor( $image_path, array( 'editor' => 'WP_Image_Editor_Imagick' ) );
     $filter_triangle = 'FILTER_TRIANGLE';
     $editor->thumbnail_image( $target_width, $target_height, $filter_triangle );
 
@@ -67,6 +71,16 @@ function irfd_handle_resize_submission() {
     $upload_dir_triangle = wp_upload_dir();
     $new_image_path_triangle = $upload_dir_triangle['path'] . '/' . $new_filename_triangle;
     $save_result_triangle = $editor->save( $new_image_path_triangle );
+
+    add_filter( 'imagick_resize_filter', 'irfd_add_filter_then_resize');
+    $editor->resize( $target_width, $target_height, false );
+    remove_filter( 'imagick_resize_filter', 'irfd_add_filter_then_resize' );
+
+    $path_parts_hamming = pathinfo( $image_path );
+    $new_filename_hamming = $path_parts_hamming['filename'] . '-hamming-resized-' . $target_width . 'x' . $target_height . '.' . $path_parts_hamming['extension'];
+    $upload_dir_hamming = wp_upload_dir();
+    $new_image_path_hamming = $upload_dir_hamming['path'] . '/' . $new_filename_hamming;
+    $save_result_hamming = $editor->save( $new_image_path_hamming );
 
     $editor_lanczos = wp_get_image_editor( $image_path, array( 'editor' => 'WP_Image_Editor_Imagick' ) );
     $editor_lanczos->thumbnail_image( $target_width, $target_height );
@@ -83,6 +97,10 @@ function irfd_handle_resize_submission() {
     $new_image_url_triangle = $upload_dir_triangle['baseurl'] . $relative_new_path_triangle;
     $filesize_triangle = filesize( $new_image_path_triangle );
 
+    $relative_new_path_hamming = str_replace( $upload_dir_hamming['basedir'], '', $save_result_hamming['path'] );
+    $new_image_url_hamming = $upload_dir_hamming['baseurl'] . $relative_new_path_hamming;
+    $filesize_hamming = filesize( $new_image_path_hamming );
+
     $relative_new_path_lanczos = str_replace( $upload_dir_lanczos['basedir'], '', $save_result_lanczos['path'] );
     $new_image_url_lanczos = $upload_dir_lanczos['baseurl'] . $relative_new_path_lanczos;
     $filesize_lanczos = filesize( $new_image_path_lanczos );
@@ -93,8 +111,9 @@ function irfd_handle_resize_submission() {
     echo '<div class="result-images" style="text-align: center;">';
     echo '  <div style="margin-bottom: 20px;"><h4>Original Image</h4><img src="' . $original_url . '" alt="Original Image" style="max-width: 1000px; height: auto; display: block; margin-left: auto; margin-right: auto;"></div>';
     echo '  <div style="display: flex; justify-content: center;">';
-    echo '    <div style="text-align: center; margin-right: 0;"><h4>Resized Image (FILTER_TRIANGLE)</h4><img src="' . $new_image_url_triangle . '?t='.time().'" alt="Resized Image (Triangle)" style="height: auto; display: block;"><p>Filesize: ' . $filesize_triangle . ' bytes</p></div>';
-    echo '    <div style="text-align: center; margin-left: 0;"><h4>Resized Image (FILTER_LANCZOS)</h4><img src="' . $new_image_url_lanczos . '?t='.time().'" alt="Resized Image (Lanczos)" style="height: auto; display: block;"><p>Filesize: ' . $filesize_lanczos . ' bytes</p></div>';
+    echo '    <div style="text-align: center; margin-right: 0;"><h4>Resized Image w/ Function (FILTER_TRIANGLE)</h4><img src="' . $new_image_url_triangle . '?t='.time().'" alt="Resized Image (Triangle)" style="height: auto; display: block;"><p>Filesize: ' . $filesize_triangle . ' bytes</p></div>';
+    echo '    <div style="text-align: center; margin-right: 0;"><h4>Resized Image w/ Filter Hook (FILTER_HAMMING)</h4><img src="' . $new_image_url_hamming . '?t='.time().'" alt="Resized Image (Hamming)" style="height: auto; display: block;"><p>Filesize: ' . $filesize_hamming . ' bytes</p></div>';
+    echo '    <div style="text-align: center; margin-left: 0;"><h4>Resized Image Default (FILTER_LANCZOS)</h4><img src="' . $new_image_url_lanczos . '?t='.time().'" alt="Resized Image (Lanczos)" style="height: auto; display: block;"><p>Filesize: ' . $filesize_lanczos . ' bytes</p></div>';
     echo '  </div>';
     echo '</div>';
 } 
